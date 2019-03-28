@@ -2,7 +2,7 @@
 A simple session manager in Ruby
 ## FAQ
 ### Why?
-I wanted to create *even simpler* than the existing cli session managers. I also wanted to create it in something that wasn't bash.
+I wanted to create a session manager *even simpler* than the existing ones. I also wanted to create it in something that wasn't bash.
 ### No I mean why did you write code like that. It's awful
 Ah man it's a real foggy day today. Must be a lot of upwelling.
 ### How do I install it
