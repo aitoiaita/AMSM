@@ -4,6 +4,10 @@
 # /_/ \_\_|  |_|___/_|  |_|
 #     AM Session Manager
 
+INDENT = 2
+PROMPT = 'amsm> '
+XSESS_DIR = '/usr/share/xsessions/'
+
 class Session
 	def initialize(name, exec)
 		@name = name
@@ -31,19 +35,19 @@ commands.default = lambda { |argv, sessions| puts "Invalid command" }
 
 def parse_session(data)
 	lines = data.split("\n")
-	return nil if not lines[0] == '[Desktop Entry]'
-	lines.shift
+	return nil if not lines[0] == '[Desktop Entry]' # session files need to start with this line
+	lines.shift # remove the first element ("[Desktop Entry]") from the lines
 
 	options = lines
 		.select{|l| l.count('=') == 1} # only keep lines that have an '=' so a split('=') will yield 2 elements
 		.map{|l| l.split('=')}         # split ["key=value"] into [["key", "value"]]
 		.to_h                          # convert [["key", "value"]] into {"key" => "value"}
-	return nil if options['Name'].nil? or options['Exec'].nil?
+	return nil if options['Name'].nil? or options['Exec'].nil? # the session needs to contain a name and command
 	return Session.new(options['Name'], options['Exec'])
 end
 
 def read_sessions
-	sessions = Dir.glob('/usr/share/xsessions/*.desktop')
+	sessions = Dir.glob("#{XSESS_DIR}/*.desktop")
 		.map{|p| parse_session(File.read(p))} # parse the session file at each path
 		.reject(&:nil?)     # remove invalid sessions
 		.each.with_index(1) # iterate through each object with its index starting at 1 instead of 0
@@ -56,13 +60,13 @@ end
 
 def print_sessions(session_array)
 	puts session_array
-		.map{|index, session| "  #{index} #{session.name}"}
+		.map{|index, session| (' ' * INDENT) + "#{index} #{session.name}"}
 		.join("\n")
 end
 
 def prompt(sessions, commands)
 	loop do
-		print 'amsm> '
+		print PROMPT
 		(argv = $stdin.gets.chomp.split(' ')).empty? and next
 		r = commands.find(->{0}) {|regex, func| argv[0].match(regex)}[0]
 		commands[r][argv, sessions]
