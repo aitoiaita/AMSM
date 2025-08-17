@@ -8,19 +8,6 @@ INDENT = 2
 PROMPT = 'amsm> '
 XSESS_DIR = '/usr/share/xsessions/'
 
-class Session
-	def initialize(name, exec)
-		@name = name
-		@exec = exec
-	end
-
-	def call
-		system "startx #{@exec}"
-	end
-
-	attr_reader :name
-end
-
 commands = {
 	/exit|quit/ => lambda { |argv, sessions|
 		exit
@@ -28,7 +15,7 @@ commands = {
 	/run|[0-9]+/ => lambda { |argv, sessions|
 		argv = argv[1..-1] if argv[0] == 'run'
 		session_index = argv[0].to_i
-		sessions[session_index].call
+		system "startx #{sessions[session_index]['Exec']}"
 	}
 }
 commands.default = lambda { |argv, sessions| puts "Invalid command" }
@@ -36,14 +23,14 @@ commands.default = lambda { |argv, sessions| puts "Invalid command" }
 def parse_session(data)
 	lines = data.split("\n")
 	return nil if not lines[0] == '[Desktop Entry]' # session files need to start with this line
-	lines.shift # remove the first element ("[Desktop Entry]") from the lines
 
-	options = lines
-		.select{|l| l.count('=') == 1} # only keep lines that have an '=' so a split('=') will yield 2 elements
-		.map{|l| l.split('=')}         # split ["key=value"] into [["key", "value"]]
-		.to_h                          # convert [["key", "value"]] into {"key" => "value"}
+	options = lines[1..] # remove the first element ("[Desktop Entry]") from the lines
+		.select{|l| l.include?('=') }      # only keep lines that have '='
+		.map{|l| l.split('=') }             # split ["key=value"] into [["key", "value"]]
+		.map{|la| la.fill('', la.size..1) } # handle empty "value"s
+		.to_h                               # convert [["key", "value"]] into {"key" => "value"}
 	return nil if options['Name'].nil? or options['Exec'].nil? # the session needs to contain a name and command
-	return Session.new(options['Name'], options['Exec'])
+	return options
 end
 
 def read_sessions
@@ -60,7 +47,7 @@ end
 
 def print_sessions(session_array)
 	puts session_array
-		.map{|index, session| (' ' * INDENT) + "#{index} #{session.name}"}
+		.map{|index, session| (' ' * INDENT) + "#{index} #{session['Name']}"}
 		.join("\n")
 end
 
